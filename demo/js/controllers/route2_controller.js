@@ -1,3 +1,8 @@
 App.Route2Controller = Ember.Controller.extend({
-	description: "I'm Route2"
+	btnText: "click me",
+	actions: {
+		sayHello: function(){
+			alert("I'm Route2 Controller");
+		}
+	}
 });

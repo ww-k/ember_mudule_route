@@ -1,1 +1,29 @@
-route3
+{{outlet o1}}
+{{outlet o2}}
+<h1>I'm route3.</h1>
+<pre>
+App.Route3Route = Ember.Route.extend({
+	//配置路由依赖的模板
+	templateNames: [
+		"route1",
+		"route2",
+		"route3"
+	],
+	//配置路由依赖的控制器，视图， 组件等。
+	dependences: [
+		"js/controllers/route2_controller",
+		"js/views/route2_view"
+	],
+	renderTemplate: function(){
+		this.render("route3");
+		this.render("route1", {
+			into: 'route3',
+			outlet: 'o1'
+		});
+		this.render("route2", {
+			into: 'route3',
+			outlet: 'o2'
+		});
+	}
+});
+</pre>
