@@ -1,0 +1,11 @@
+<h1>I'm route2.</h1>
+<button class="btn" {{action sayHello}}>{{btnText}}</button>
+<pre>
+App.Route2Route = Ember.Route.extend({
+	//配置路由依赖的控制器，视图， 组件等。
+	dependences: [
+		"js/controllers/route2_controller",
+		"js/views/route2_view"
+	]
+});
+</pre>

@@ -1,0 +1,13 @@
+<h1>I'm route1.</h1>
+<div>加载了libs/route.js后，就默认开启了模块化路由功能，就可以根据访问的路由， 动态加载路由所需的模板，控制器，视图，组件等。</div>
+<pre>
+//可通过下面配置关闭模块化路由功能。
+Ember.USE_MODULE_ROUTE = false;
+</pre>
+<pre>
+//配置text库的地址和模板库的地址
+Ember.Route.reopen({
+	templateLoader: "./libs/text",
+	templateDir: "./templates/"
+})
+</pre>

@@ -1,0 +1,7 @@
+body{
+    overflow-y: hidden;
+    padding-top: 50px;
+}
+#_contentFrame_{
+    width: 100%;
+}
