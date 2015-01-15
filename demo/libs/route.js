@@ -46,15 +46,12 @@
 		*/
 		templateDir: "./templates/",
 		/**
-			该路由需要从templateDir目录下请求的模版名数组,如果只有一个,可以是字符串.
-			如不指定该属性, 只会将与路由名对应的模板加入请求列表.
-			如果指定了该属性, 则只会请求该属性指定的模版.
-			所以,可以将该属性设置为空数组[], 则不会请求任何模版.
+			声明该路由用到的模板名称以及模板路径.
 			@memberof Ember.Route
 			@default null
 			@instance
 		*/
-		templateNames: null,
+		templates: null,
 		/**
 			该路由需要用到的组件类.
 			@memberof Ember.Route
@@ -62,34 +59,52 @@
 			@instance
 		*/
 		dependences: null,
+
+		routeCls: Ember.computed(function(){
+			return "route-" + this.routeName.replace(/\-/g, '/');
+		}),
+
+		enter: function() {
+			this._super();
+			$("body").addClass(this.get("routeCls"));
+		},
+
 		exit: function() {
 			this._abortSetup = true;
 			this._super();
+			$("body").removeClass(this.get("routeCls"));
 		},
-		setup: function(context) {
+
+		setup: function() {
+			if(!Ember.USE_MODULE_ROUTE ){
+				return this._super();
+			}
 			this._abortSetup = false;
-			var setupPromise = this._setup();
+			var setupPromise = this.__setup();
 			setupPromises.push(setupPromise);
 			setupFuns.push({
 				fn: this.__nextSuper,
-				args: [context],
+				args: [].slice.call(arguments),
 				context: this
 			});
 			Ember.run.once(null, _runSetupQueue);
 		},
-		_setup: function() {
+
+		__setup: function() {
 			var route = this;
 			return new Ember.RSVP.Promise(function(resolve, reject) {
-				var routeName,
+				var needsTpl = false,
+					routeName,
+					templates,
 					TEMPLATES,
 					templateLoader,
 					templateDir,
-					tplNames,
 					dependences,
 					depsTplNames,
 					depsTplUrls;
 
 				if (route.constructor != "Ember.Route") {
+					needsTpl = true;
 					routeName = route.routeName.replace(/\./g, '/');
 				}
 
@@ -97,26 +112,27 @@
 				templateLoader = route.templateLoader;
 				templateDir = route.templateDir;
 
-				tplNames = route.templateNames;
-				if(Ember.USE_MODULE_ROUTE){
-					tplNames = tplNames || routeName || [];
-				} else {
-					tplNames = tplNames || [];
-				}
-				tplNames = typeof tplNames == "string" ? [tplNames] : [].concat(tplNames);
-
 				dependences = route.dependences || [];
-				dependences = typeof dependences == "string" ? [dependences] : [].concat(dependences);
+
 				depsTplNames = [];
 				depsTplUrls = [];
-
-				forEach(tplNames, function(tplName, i, self) {
-					if (!TEMPLATES.hasOwnProperty(tplName)) {
-						depsTplNames.push(tplName);
-						depsTplUrls.push(templateLoader + "!" + templateDir +
-							tplName + ".hbs");
-					}
-				});
+				if(needsTpl){
+					templates = route.templates || [routeName];
+					forEach(templates, function(tpl, i, arr) {
+						if(Ember.typeOf(tpl) == "string"){
+							tpl = {
+								name: tpl,
+								url: tpl.replace(/\//g, '_') + ".hbs"
+							};
+							arr[i] = tpl;
+						}
+						if (!TEMPLATES.hasOwnProperty(tpl.name)) {
+							depsTplNames.push(tpl.name);
+							depsTplUrls.push(templateLoader + "!" + templateDir + "/" +
+								tpl.url);
+						}
+					});
+				}
 
 				dependences = [].concat(depsTplUrls, dependences);
 
@@ -131,85 +147,7 @@
 						Ember.run(null, resolve);
 					});
 				}
-
 			});
 		}
-		// setup: function(context) {
-		// 	this._abortRender = false;
-		// 	var controllerName = this.controllerName || this.routeName,
-		// 		controller = this.controllerFor(controllerName, true);
-		// 	if (!controller) {
-		// 		controller =  this.generateController(controllerName, context);
-		// 	}
-
-		// 	this.controller = controller;
-
-		// 	//由于是新项目..弃用方法判断也去掉了
-		// 	this.setupController(controller, context);
-
-		// 	var renderPromise = this._renderTemplate();
-		// 	renderPromises.push(renderPromise);
-		// 	renderFuns.push({
-		// 		fn: this.renderTemplate,
-		// 		args: [controller, context],
-		// 		context: this
-		// 	});
-		// 	Ember.run.once(null, _runRenderTemplateQueue);
-		// },
-		//加入动态加载逻辑
-		// _renderTemplate: function() {
-		// 	var route = this;
-		// 	return new Ember.RSVP.Promise(function(resolve, reject) {
-		// 		var routeName,
-		// 			TEMPLATES,
-		// 			templateLoader,
-		// 			templateDir,
-		// 			tplNames,
-		// 			tplViews,
-		// 			depsViews,
-		// 			depsTplNames,
-		// 			depsTplUrls,
-		// 			deps,
-		// 			args;
-		// 		if (route.constructor != "Ember.Route") {
-		// 			routeName = route.routeName.replace(/\./g, '/');
-		// 		}
-		// 		TEMPLATES = Ember.TEMPLATES;
-		// 		templateLoader = route.templateLoader;
-		// 		templateDir = route.templateDir;
-		// 		tplNames = route.templateNames || routeName || [];
-		// 		tplNames = typeof tplNames == "string" ? [tplNames] : [].concat(tplNames);
-		// 		tplViews = route.templateViews || [];
-		// 		tplViews = typeof tplViews == "string" ? [tplViews] : [].concat(tplViews);
-		// 		depsTplNames = [];
-		// 		depsTplUrls = [];
-		// 		args = [].slice.call(arguments);
-
-		// 		//将原生数组转变为Ember.Array
-		// 		Ember.A(tplNames);
-		// 		Ember.A(tplViews);
-		// 		Ember.A(depsTplNames);
-
-		// 		tplNames.forEach(function(tplName, i, self) {
-		// 			if (!TEMPLATES.hasOwnProperty(tplName)) {
-		// 				depsTplNames.push(tplName);
-		// 				depsTplUrls.push(templateLoader + "!" + templateDir +
-		// 					tplName.replace(/\//g, '_') + ".hbs");
-		// 			}
-		// 		});
-		// 		depsViews = tplViews.map(function(tplView, i, self) {
-		// 			return tplView.replace(/\./g, '/').toLowerCase();
-		// 		});
-		// 		deps = [].concat(depsTplUrls, depsViews);
-
-		// 		require(deps, function() {
-		// 			var modules = arguments;
-		// 			depsTplNames.forEach(function(tplName, i) {
-		// 				TEMPLATES[tplName] = Ember.Handlebars.compile(modules[i]);
-		// 			});
-		// 			Ember.run(null, resolve, args);
-		// 		});
-		// 	});
-		// }
 	});
 })();
